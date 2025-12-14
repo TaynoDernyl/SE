@@ -16,6 +16,10 @@ import telebot
 from telebot import types
 import http
 import requests
+from pathlib import Path
+import os
+
+folder = Path("Books pdf")
 
 api_key = "8572616475:AAGXsL5WRc-zCDUIawJAyQQWxddinvJ5EHE"
 
@@ -40,9 +44,14 @@ def for_answer_admin(text):
     result = " ".join(parts[2:])
     return result
 
-def search_in_internet(name):
-    print(f"Ищем в интернете книгу:{name}")
-
+def search_in_files(name):
+    print(f"Ищем книгу:{name}")
+    name = name.lower()
+    
+    for file in folder.glob("*.pdf"):
+        if file.stem == name:
+            return file
+    return False
 def check_internet_requests():
     try:
         response = requests.get("http://www.google.com", timeout=3)
@@ -119,11 +128,17 @@ def ban_function(message):
 
 @bot.message_handler(content_types=['text'])
 def search_book(message): 
-    if search_ban_users(message.chat.id == False):
+    if search_ban_users(message.chat.id) == False:
         if check_internet_requests(): #Если с инетом все норм
             print(f"возможный поиск книги:{message.text}, айди: {message.chat.id}")
             bot.send_message(message.chat.id, f"Ищем книгу с названием: {message.text}...")
-            search_in_internet(message.text)
+            path = search_in_files(message.text)
+            if path == False:
+                bot.send_message(message.chat.id, "К сожалению в наших источниках такой книги не найдено")
+            else:
+                print(path)
+                with open(path, "rb") as f:
+                    bot.send_document(message.chat.id, f) 
         else:
             print("Ошибка сервера, попробуйте позже")
 
